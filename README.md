@@ -1,6 +1,10 @@
 # Lace
 
-**TODO: Add description**
+Redis-backed Erlang node clustering.
+
+[x] Node autodiscovery
+[x] Redis persistence
+[x] Autoprune unreachable nodes
 
 ## Installation
 
