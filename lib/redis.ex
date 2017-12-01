@@ -17,8 +17,9 @@ defmodule Lace.Redis do
       {:max_overflow, 10}
     ]
     eredis_args = [
-      {:host, String.to_char_list(Confort.get(:master_ip))},
-      {:port, 6379}
+      {:host, String.to_char_list(opts[:redis_ip])},
+      {:port, opts[:redis_port]},
+      {:password, String.to_char_list(opts[:redis_pass])}
     ]
     children = [
       :poolboy.child_spec(:redis_pool, pool_options, eredis_args)

@@ -1,24 +1,28 @@
 defmodule Lace do
   use GenServer
   require Logger
+  alias Lace.Redis
 
   @connect_interval 1000
 
-  def start_link(_) do
-    GenServer.start_link __MODULE__, :ok
+  def start_link(opts) do
+    GenServer.start_link __MODULE__, opts
   end
 
-  def init(_) do
-    {:ok, redis} = Redix.start_link(System.get_env("REDIS_URL"))
+  def init(opts) do
     network_state = get_network_state()
+    hash = :crypto.hash(:md5, :os.system_time(:millisecond) 
+                  |> Integer.to_string) 
+                  |> Base.encode16 
+                  |> String.downcase
     state = %{
-      name: System.get_env("NAME"),
-      group: System.get_env("GROUP"),
-      cookie: System.get_env("COOKIE"),
+      name: opts[:name],
+      group: opts[:group],
+      cookie: opts[:cookie],
       longname: nil,
       hostname: network_state[:hostname],
       ip: network_state[:hostaddr],
-      redis: redis,
+      hash: hash,
     }
     Process.send_after self(), :start_connect, 250
     {:ok, state}
@@ -29,9 +33,13 @@ defmodule Lace do
       node_name = "#{state[:name]}@#{state[:ip]}"
       node_atom = node_name |> String.to_atom
 
-      Logger.info "lace: Starting node: #{node_name}"
-      {:ok, _} = Node.start(node_atom, :longnames)
-      Node.set_cookie(state[:cookie] |> String.to_atom)
+      unless Node.alive? do
+        Logger.info "lace: Starting node: #{node_name}"
+        {:ok, _} = Node.start(node_atom, :longnames)
+        Node.set_cookie(state[:cookie] |> String.to_atom)
+      else
+        Logger.warn "Not starting node (already alive)"
+      end
 
       Logger.info "Updating registry..."
       new_state = %{state | longname: node_name}
@@ -52,19 +60,26 @@ defmodule Lace do
     nodes = registry_read state
 
     for node <- nodes do
-      {hostname, longname} = node
+      {hash, longname} = node
 
       case Node.connect(longname |> String.to_atom) do
-        true -> Logger.info "Connected to #{longname}"
-        false -> Logger.warn "Couldn't connect to #{longname}"
+        true -> Logger.debug "Connected to #{longname}"
+        false -> delete_node state, hash, longname
         :ignored -> Logger.warn "Local node not alive for #{longname}!?"
       end
     end
-    Logger.info "lace: Connected to: #{inspect Node.list}"
+    Logger.debug "lace: Connected to: #{inspect Node.list}"
 
     Process.send_after self(), :connect, @connect_interval
 
     {:noreply, state}
+  end
+
+  defp delete_node(state, hash, longname) do
+    Logger.warn "Couldn't connect to #{longname} (#{hash}), deleting..."
+    reg = registry_name state[:group]
+    {:ok, _} = Redis.q ["HDEL", reg, hash]
+    :ok
   end
 
   defp get_network_state do
@@ -79,8 +94,9 @@ defmodule Lace do
   # Read all members of the registry
   defp registry_read(state) do
     reg = registry_name state[:group]
-    {:ok, res} = Redix.command state[:redis], ["HGETALL", reg]
-
+    {:ok, res} = Redis.q ["HGETALL", reg]
+    Logger.debug "Reg: #{inspect reg}"
+    Logger.debug "Reg: #{inspect res}"
     res
     |> Enum.chunk(2)
     |> Enum.map(fn [a, b] -> {a, b} end)
@@ -90,7 +106,7 @@ defmodule Lace do
   # Write ourself to the registry
   defp registry_write(state) do
     reg = registry_name state[:group]
-    Redix.command state[:redis], ["HSET", reg, state[:hostname], state[:longname]]
+    Redis.q ["HSET", reg, state[:hash], state[:longname]]
   end
 
   defp registry_name(name) do

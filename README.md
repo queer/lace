@@ -4,18 +4,23 @@
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `lace` to your list of dependencies in `mix.exs`:
+Add the following to your `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:lace, "~> 0.1.0"}
+    {:lace, github: "queer/lace"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/lace](https://hexdocs.pm/lace).
+## Usage
 
+Add the following to your application's supervision tree:
+
+```elixir
+children = [
+  supervisor(Lace.Redis, %{redis_ip: "127.0.0.1", redis_port: 6379, pool_size: 10, redis_pass: "a"}),
+  worker(Lace),
+]
+```
