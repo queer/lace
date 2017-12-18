@@ -33,13 +33,9 @@ defmodule Lace do
       node_name = "#{state[:name]}@#{state[:ip]}"
       node_atom = node_name |> String.to_atom
 
-      unless Node.alive? do
-        Logger.info "lace: Starting node: #{node_name}"
-        {:ok, _} = Node.start(node_atom, :longnames)
-        Node.set_cookie(state[:cookie] |> String.to_atom)
-      else
-        Logger.warn "Not starting node (already alive)"
-      end
+      Logger.info "lace: Starting node: #{node_name}"
+      {:ok, _} = Node.start(node_atom, :longnames)
+      Node.set_cookie(state[:cookie] |> String.to_atom)
 
       Logger.info "Updating registry..."
       new_state = %{state | longname: node_name}
