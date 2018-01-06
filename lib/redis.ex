@@ -27,8 +27,29 @@ defmodule Lace.Redis do
     supervise(children, strategy: :one_for_one)
   end
 
-  # a redis query transaction function
+  @doc """
+  Run a single redis command
+  """
   def q(args) do
-    {:ok, item} = :poolboy.transaction(:redis_pool, fn(worker) -> :eredis.q(worker, args, 5000) end)
+    {:ok, _item} = :poolboy.transaction(:redis_pool, fn(worker) -> q(worker, args) end)
+  end
+
+  @doc """
+  Run a single redis command against the specified worker
+  """
+  def q(worker, args) do
+    {:ok, _item} = :eredis.q worker, args, 5000
+  end
+
+  @doc """
+  Run a transaction. The function passed in must take a worker and should 
+  ideally use q/2
+  """
+  def t(f) do
+    :poolboy.transaction(:redis_pool, fn(worker) -> 
+        q worker, ["MULTI"]
+        f.(worker)
+        q worker, ["EXEC"]
+      end)
   end
 end
