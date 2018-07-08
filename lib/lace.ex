@@ -58,10 +58,12 @@ defmodule Lace do
     for node <- nodes do
       {hash, longname} = node
 
-      case Node.connect(longname |> String.to_atom) do
-        true -> Logger.debug "Connected to #{longname}"
-        false -> delete_node state, hash, longname
-        :ignored -> Logger.warn "Local node not alive for #{longname}!?"
+      unless hash == state[:hash] do
+        case Node.connect(longname |> String.to_atom) do
+          true -> Logger.debug "Connected to #{longname}"
+          false -> delete_node state, hash, longname
+          :ignored -> Logger.debug "[WARN] Local node not alive for #{longname}!?"
+        end
       end
     end
     Logger.debug "lace: Connected to: #{inspect Node.list}"
@@ -72,7 +74,7 @@ defmodule Lace do
   end
 
   defp delete_node(state, hash, longname) do
-    Logger.warn "Couldn't connect to #{longname} (#{hash}), deleting..."
+    Logger.debug "[WARN] Couldn't connect to #{longname} (#{hash}), deleting..."
     reg = registry_name state[:group]
     {:ok, _} = Redis.q ["HDEL", reg, hash]
     :ok
