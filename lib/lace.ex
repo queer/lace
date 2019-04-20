@@ -16,7 +16,7 @@ defmodule Lace do
                   |> Base.encode16 
                   |> String.downcase
     state = %{
-      name: opts[:name],
+      name: "#{opts[:name]}_#{network_state[:hostname]_#{hash}}",
       group: opts[:group],
       cookie: opts[:cookie],
       longname: nil,
