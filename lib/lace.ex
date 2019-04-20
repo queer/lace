@@ -24,7 +24,7 @@ defmodule Lace do
       ip: network_state[:hostaddr],
       hash: hash,
     }
-    Process.send_after self(), :start_connect, 250
+    Process.send_after self(), :start_connect, 100
     {:ok, state}
   end
 
@@ -42,7 +42,7 @@ defmodule Lace do
       registry_write new_state
 
       Logger.info "All done! Starting lace..."
-      Process.send_after self(), :connect, 250
+      send self(), :connect
 
       {:noreply, new_state}
     else
