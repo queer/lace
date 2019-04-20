@@ -108,6 +108,6 @@ defmodule Lace do
   end
 
   defp registry_name(name) do
-    "lace-reg-#{name}"
+    "lace:reg:#{name}"
   end
 end
