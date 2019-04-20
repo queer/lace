@@ -11,10 +11,11 @@ defmodule Lace do
 
   def init(opts) do
     network_state = get_network_state()
-    hash = :crypto.hash(:md5, :os.system_time(:millisecond) 
-                  |> Integer.to_string) 
-                  |> Base.encode16 
-                  |> String.downcase
+    hash =
+      :crypto.hash(:md5, :os.system_time(:millisecond) 
+      |> Integer.to_string) 
+      |> Base.encode16 
+      |> String.downcase
     state = %{
       name: "#{opts[:name]}_#{network_state[:hostname]}_#{opts[:discrim] || hash}",
       group: opts[:group],
@@ -38,12 +39,8 @@ defmodule Lace do
       registry_write new_state
 
       Logger.info "All done! Starting lace..."
-      send self(), :connect
-
-      {:noreply, new_state}
     else
       Logger.warn "lace: Node already alive, doing nothing..."
-      {:noreply, state}
     end
     
     Process.send_after self(), :connect, 100
