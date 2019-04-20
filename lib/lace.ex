@@ -24,11 +24,7 @@ defmodule Lace do
       ip: network_state[:hostaddr],
       hash: hash,
     }
-    Process.send_after self(), :start_connect, 100
-    {:ok, state}
-  end
-
-  def handle_info(:start_connect, state) do
+    
     unless Node.alive? do
       node_name = "#{state[:name]}@#{state[:ip]}"
       node_atom = node_name |> String.to_atom
@@ -49,6 +45,9 @@ defmodule Lace do
       Logger.warn "lace: Node already alive, doing nothing..."
       {:noreply, state}
     end
+    
+    Process.send_after self(), :connect, 100
+    {:ok, state}
   end
 
   def handle_info(:connect, state) do
