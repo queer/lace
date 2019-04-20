@@ -60,13 +60,18 @@ defmodule Lace do
 
       unless hash == state[:hash] do
         case Node.connect(longname |> String.to_atom) do
-          true -> Logger.debug "Connected to #{longname}"
-          false -> delete_node state, hash, longname
-          :ignored -> Logger.debug "[WARN] Local node not alive for #{longname}!?"
+          true ->
+            # Logger.debug "Connected to #{longname}"
+            nil
+          false ->
+            delete_node state, hash, longname
+          :ignored ->
+            # Logger.debug "[WARN] Local node not alive for #{longname}!?"
+            nil
         end
       end
     end
-    Logger.debug "lace: Connected to: #{inspect Node.list}"
+    # Logger.debug "lace: Connected to: #{inspect Node.list}"
 
     Process.send_after self(), :connect, @connect_interval
 
@@ -74,7 +79,7 @@ defmodule Lace do
   end
 
   defp delete_node(state, hash, longname) do
-    Logger.debug "[WARN] Couldn't connect to #{longname} (#{hash}), deleting..."
+    # Logger.debug "[WARN] Couldn't connect to #{longname} (#{hash}), deleting..."
     reg = registry_name state[:group]
     {:ok, _} = Redis.q ["HDEL", reg, hash]
     :ok
@@ -93,8 +98,8 @@ defmodule Lace do
   defp registry_read(state) do
     reg = registry_name state[:group]
     {:ok, res} = Redis.q ["HGETALL", reg]
-    Logger.debug "Reg: #{inspect reg}"
-    Logger.debug "Reg: #{inspect res}"
+    # Logger.debug "Reg: #{inspect reg}"
+    # Logger.debug "Reg: #{inspect res}"
     res
     |> Enum.chunk(2)
     |> Enum.map(fn [a, b] -> {a, b} end)
