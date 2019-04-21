@@ -43,7 +43,9 @@ defmodule Lace do
       Logger.warn "lace: Node already alive, doing nothing..."
     end
     
-    Process.send_after self(), :connect, 100
+    unless opts[:no_connect] do
+      Process.send_after self(), :connect, 100
+    end
     {:ok, state}
   end
 
@@ -81,7 +83,7 @@ defmodule Lace do
     :ok
   end
 
-  defp get_network_state do
+  def get_network_state do
     {:ok, hostname} = :inet.gethostname()
     {:ok, hostaddr} = :inet.getaddr(hostname, :inet)
     %{
@@ -91,7 +93,7 @@ defmodule Lace do
   end
 
   # Read all members of the registry
-  defp registry_read(state) do
+  def registry_read(state) do
     reg = registry_name state[:group]
     {:ok, res} = Redis.q ["HGETALL", reg]
     # Logger.debug "Reg: #{inspect reg}"
